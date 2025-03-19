@@ -175,3 +175,4 @@ cython_debug/
 
 # Project specific
 playground*.ipynb
+test_data/

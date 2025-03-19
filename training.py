@@ -1,6 +1,7 @@
 import torch
+import visualization
 
-def train(model, epochs, optimizer, loss, loader):
+def train(model, epochs, optimizer, loss_function, loader):
 
     outputs = []
     losses = []
@@ -9,19 +10,30 @@ def train(model, epochs, optimizer, loss, loader):
     model.to(device)
 
     for epoch in range(epochs):
-        for data, _ in loader:
-            data = data.view(data.shape[0], model.layer_dims[0]).to(device)
+        epoch_loss = 0
+        batch_count = 0
+
+        for batch in loader:
+            data = batch.to(device)
             
             reconstructed = model(data)
-            loss = loss(reconstructed, data)
+            loss = loss_function(reconstructed, data)
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-            losses.append(loss.item())
-        
-        outputs.append((epoch, data, reconstructed))
-        print(f"Epoch {epoch+1}/{epochs}, Loss: {loss.item():.6f}")
+            epoch_loss += loss.item()
+            batch_count += 1
+
+        avg_loss = epoch_loss / batch_count
+        losses.append(avg_loss)
+
+        outputs.append((epoch, data.cpu().detach(), reconstructed.cpu().detach()))
+
+        print(f"Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.6f}")
+
+    visualization.plot_losses(losses, range(epochs))
+    visualization.reconstructed_vs_data(loader, model, 1)
 
     return outputs, losses, model
